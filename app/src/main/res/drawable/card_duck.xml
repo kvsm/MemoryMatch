@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:pathData="M16 64 C16 52 28 50 38 54 L62 56 C70 52 76 42 84 42 C90 54 88 82 58 84 L40 84 C24 84 16 76 16 64 Z"
+        android:fillColor="#FFD23F"
+        android:strokeColor="#3B2F3F"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M46 66 Q60 58 72 66 Q62 78 48 74 Z"
+        android:fillColor="#F5B800"
+        android:strokeColor="#3B2F3F"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M18,38 A18,18 0 1,0 54,38 A18,18 0 1,0 18,38 Z"
+        android:fillColor="#FFD23F"
+        android:strokeColor="#3B2F3F"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M21 40 Q6 40 9 48 Q14 54 25 48 Z"
+        android:fillColor="#F7882F"
+        android:strokeColor="#3B2F3F"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M29.8,34 A4.2,4.2 0 1,0 38.2,34 A4.2,4.2 0 1,0 29.8,34 Z"
+        android:fillColor="#3B2F3F" />
+    <path
+        android:pathData="M34,32.5 A1.5,1.5 0 1,0 37,32.5 A1.5,1.5 0 1,0 34,32.5 Z"
+        android:fillColor="#FFFFFF" />
+    <path
+        android:pathData="M38,44 A4,4 0 1,0 46,44 A4,4 0 1,0 38,44 Z"
+        android:fillColor="#FF8FA3"
+        android:fillAlpha="0.55" />
+    <path
+        android:pathData="M8 92 Q18 86 28 92 Q38 98 48 92 Q58 86 68 92 Q78 98 88 92"
+        android:strokeColor="#6EC6F0"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
