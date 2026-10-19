@@ -1,6 +1,11 @@
 package com.kvsm.memorymatch.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -17,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kvsm.memorymatch.game.CardArt
@@ -51,9 +58,11 @@ import com.kvsm.memorymatch.game.SetupChoice
 @Composable
 fun SetupScreen(
     choice: SetupChoice,
+    onSolo: (Boolean) -> Unit,
     onPlayers: (Int) -> Unit,
     onDifficulty: (Difficulty) -> Unit,
     onStart: () -> Unit,
+    onHighScores: () -> Unit,
 ) {
     Column(
         Modifier
@@ -73,20 +82,44 @@ fun SetupScreen(
         )
 
         Spacer(Modifier.height(28.dp))
-        SectionTitle("How many players?")
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            for (n in GameEngine.MIN_PLAYERS..GameEngine.MAX_PLAYERS) {
-                PlayerCountButton(n, selected = n == choice.players, onClick = { onPlayers(n) })
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            for (p in 0 until choice.players) {
-                Box(
-                    Modifier
-                        .size(14.dp)
-                        .background(Palette.Players[p], CircleShape),
-                )
+        ModeToggle(solo = choice.solo, onSolo = onSolo)
+
+        AnimatedContent(
+            targetState = choice.solo,
+            transitionSpec = { fadeIn() togetherWith fadeOut() using SizeTransform(clip = false) },
+            label = "mode",
+        ) { solo ->
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (solo) {
+                    Text(
+                        "Clear the board in as few turns as you can.\nBeat the top 10 to get your name on the board!",
+                        fontSize = 16.sp,
+                        color = Palette.InkSoft,
+                        textAlign = TextAlign.Center,
+                    )
+                } else {
+                    SectionTitle("How many players?")
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        for (n in GameEngine.MIN_PLAYERS..GameEngine.MAX_PLAYERS) {
+                            PlayerCountButton(n, selected = n == choice.players, onClick = { onPlayers(n) })
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        for (p in 0 until choice.players) {
+                            Box(
+                                Modifier
+                                    .size(14.dp)
+                                    .background(Palette.Players[p], CircleShape),
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -108,7 +141,45 @@ fun SetupScreen(
 
         Spacer(Modifier.height(32.dp))
         BigButton("Let's play!", Palette.Sunshine, onClick = onStart)
+        Spacer(Modifier.height(12.dp))
+        BigButton("🏆  Top 10 scores", Palette.Panel, onClick = onHighScores)
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+/** Two-segment pill: Solo or Party. */
+@Composable
+private fun ModeToggle(solo: Boolean, onSolo: (Boolean) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .shadow(3.dp, RoundedCornerShape(50))
+            .clip(RoundedCornerShape(50))
+            .background(Palette.Panel)
+            .border(3.dp, Palette.Ink, RoundedCornerShape(50))
+            .padding(5.dp),
+    ) {
+        for ((label, isSolo) in listOf("🧠  Solo" to true, "🎉  Party" to false)) {
+            val selected = solo == isSolo
+            val bg by animateColorAsState(if (selected) Palette.Sunshine else Color.Transparent, label = "seg")
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(50))
+                    .background(bg)
+                    .clickable(role = Role.RadioButton) { onSolo(isSolo) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    label,
+                    fontSize = 18.sp,
+                    fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
+                    color = if (selected) Palette.Ink else Palette.InkSoft,
+                )
+            }
+        }
     }
 }
 

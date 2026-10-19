@@ -27,6 +27,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import com.kvsm.memorymatch.game.HighScore
+import com.kvsm.memorymatch.game.HighScoreTable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,9 +68,12 @@ import kotlinx.coroutines.delay
 @Composable
 fun GameScreen(
     playing: Screen.Playing,
+    highScores: List<HighScore>,
+    lastName: String,
     onTapCard: (Int) -> Unit,
     onPlayAgain: () -> Unit,
     onNewGame: () -> Unit,
+    onSubmitScore: (String) -> Unit,
 ) {
     val game = playing.game
     var confirmQuit by remember { mutableStateOf(false) }
@@ -89,7 +104,7 @@ fun GameScreen(
         ) {
             TurnBanner(game)
             Spacer(Modifier.height(10.dp))
-            Scoreboard(game)
+            if (game.isSolo) SoloStats(game, best = highScores.firstOrNull()?.turns) else Scoreboard(game)
             Spacer(Modifier.height(12.dp))
             CardGrid(
                 game = game,
@@ -107,7 +122,18 @@ fun GameScreen(
             enter = fadeIn(tween(300)) + scaleIn(initialScale = 0.9f),
             exit = fadeOut(),
         ) {
-            ResultsOverlay(game, onPlayAgain = onPlayAgain, onNewGame = onNewGame)
+            if (game.isSolo) {
+                SoloResultsOverlay(
+                    playing = playing,
+                    table = highScores,
+                    lastName = lastName,
+                    onSubmit = onSubmitScore,
+                    onPlayAgain = onPlayAgain,
+                    onNewGame = onNewGame,
+                )
+            } else {
+                ResultsOverlay(game, onPlayAgain = onPlayAgain, onNewGame = onNewGame)
+            }
         }
     }
 
@@ -115,7 +141,7 @@ fun GameScreen(
         AlertDialog(
             onDismissRequest = { confirmQuit = false },
             title = { Text("Leave this game?", fontWeight = FontWeight.Bold) },
-            text = { Text("The scores will be lost.") },
+            text = { Text(if (game.isSolo) "This game won't count." else "The scores will be lost.") },
             confirmButton = {
                 TextButton(onClick = { confirmQuit = false; onNewGame() }) {
                     Text("Leave", color = Palette.Miss, fontWeight = FontWeight.Bold)
@@ -136,6 +162,9 @@ private fun TurnBanner(game: GameState) {
     val phase = game.phase
     val player = game.currentPlayer
     val message = when {
+        game.isSolo && phase is Phase.Revealing && phase.isMatch -> "Match!"
+        game.isSolo && phase is Phase.Revealing -> "No match…"
+        game.isSolo && phase != Phase.GameOver -> "Find the pairs!"
         phase is Phase.Revealing && phase.isMatch -> "Match! ${playerName(player)} goes again"
         phase is Phase.Revealing -> "No match… ${playerName((player + 1) % game.playerCount)} next"
         phase == Phase.GameOver -> "All pairs found!"
@@ -171,6 +200,40 @@ private fun TurnBanner(game: GameState) {
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
             )
+        }
+    }
+}
+
+/** Solo header: turns taken, pairs found, and the best score to beat on this grid. */
+@Composable
+private fun SoloStats(game: GameState, best: Int?) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StatTile("Turns", "${game.turns}", Palette.Players[1], Modifier.weight(1f), animate = true)
+        StatTile("Pairs", "${game.pairsFound}/${game.totalPairs}", Palette.Match, Modifier.weight(1f), animate = true)
+        StatTile("Best", best?.toString() ?: "–", Palette.Sunshine, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun StatTile(label: String, value: String, color: Color, modifier: Modifier, animate: Boolean = false) {
+    Column(
+        modifier
+            .shadow(1.dp, RoundedCornerShape(16.dp))
+            .background(Palette.Panel, RoundedCornerShape(16.dp))
+            .border(3.dp, color, RoundedCornerShape(16.dp))
+            .padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(label, color = Palette.InkSoft, fontWeight = FontWeight.Black, fontSize = 14.sp)
+        AnimatedContent(
+            targetState = value,
+            transitionSpec = {
+                if (animate) (scaleIn(initialScale = 1.6f) + fadeIn()) togetherWith fadeOut()
+                else fadeIn() togetherWith fadeOut()
+            },
+            label = "stat",
+        ) { v ->
+            Text(v, color = Palette.Ink, fontWeight = FontWeight.Black, fontSize = 26.sp)
         }
     }
 }
@@ -348,6 +411,120 @@ private fun ResultsOverlay(game: GameState, onPlayAgain: () -> Unit, onNewGame: 
             BigButton("Play again", Palette.Sunshine, onClick = onPlayAgain)
             Spacer(Modifier.height(10.dp))
             BigButton("New game", Palette.Panel, onClick = onNewGame)
+        }
+    }
+}
+
+@Composable
+private fun SoloResultsOverlay(
+    playing: Screen.Playing,
+    table: List<HighScore>,
+    lastName: String,
+    onSubmit: (String) -> Unit,
+    onPlayAgain: () -> Unit,
+    onNewGame: () -> Unit,
+) {
+    val game = playing.game
+    val submitted = playing.submitted
+    // Where this score lands: from the table once saved, otherwise where it would go.
+    val rank = if (submitted != null) table.indexOf(submitted).takeIf { it >= 0 }
+    else HighScoreTable.rankFor(table, game.turns)
+    val madeTable = rank != null
+    val perfect = game.turns == game.totalPairs
+
+    val headline = when {
+        rank == 0 -> "New record!"
+        madeTable -> "Top 10!"
+        else -> "Board cleared!"
+    }
+    var name by remember { mutableStateOf(lastName) }
+    val focus = LocalFocusManager.current
+    val save = {
+        focus.clearFocus()
+        onSubmit(name)
+    }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Palette.Ink.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (madeTable) Confetti(Modifier.fillMaxSize())
+        Column(
+            Modifier
+                .padding(20.dp)
+                .shadow(12.dp, RoundedCornerShape(28.dp))
+                .background(Palette.Cream, RoundedCornerShape(28.dp))
+                .verticalScroll(rememberScrollState())
+                .padding(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(if (madeTable) "🏆" else "🧠", fontSize = 52.sp)
+            Text(
+                headline,
+                color = if (madeTable) Palette.CardBack else Palette.Ink,
+                fontSize = 34.sp,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                buildString {
+                    append("Cleared in ${game.turns} turns")
+                    if (perfect) append(" — a perfect game!")
+                    if (madeTable) append("\nThat's #${rank!! + 1} on ${playing.difficulty.label}")
+                },
+                color = Palette.InkSoft,
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(16.dp))
+
+            if (madeTable && submitted == null) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.take(HighScoreTable.MAX_NAME) },
+                    label = { Text("Your name") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { save() }),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Palette.CardBack,
+                        focusedLabelColor = Palette.CardBack,
+                        cursorColor = Palette.CardBack,
+                        focusedContainerColor = Palette.Panel,
+                        unfocusedContainerColor = Palette.Panel,
+                    ),
+                    textStyle = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Palette.Ink),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(12.dp))
+                BigButton("Save my score", Palette.Sunshine, onClick = save)
+            } else {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(Palette.Panel, RoundedCornerShape(18.dp))
+                        .padding(8.dp),
+                ) {
+                    ScoreTable(table, highlight = submitted)
+                }
+                if (!madeTable && table.size >= HighScoreTable.SIZE) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Beat ${table.last().turns} turns to make the top 10",
+                        color = Palette.InkSoft,
+                        fontSize = 15.sp,
+                    )
+                }
+                Spacer(Modifier.height(18.dp))
+                BigButton("Play again", Palette.Sunshine, onClick = onPlayAgain)
+                Spacer(Modifier.height(10.dp))
+                BigButton("New game", Palette.Panel, onClick = onNewGame)
+            }
         }
     }
 }

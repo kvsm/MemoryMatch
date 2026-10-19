@@ -36,9 +36,14 @@ data class GameState(
     val scores: List<Int>,
     val currentPlayer: Int,
     val phase: Phase,
+    /** Pairs of cards turned over so far, by anyone. Solo mode is scored on this. */
+    val turns: Int = 0,
 ) {
     val playerCount: Int get() = scores.size
+    val isSolo: Boolean get() = playerCount == 1
     val isOver: Boolean get() = phase == Phase.GameOver
+    val pairsFound: Int get() = cards.count { it.matched } / 2
+    val totalPairs: Int get() = cards.size / 2
 
     /** Indices of every player sharing the top score (more than one means a tie). */
     val leaders: List<Int>
@@ -53,12 +58,13 @@ data class GameState(
  * Every function returns a new state and leaves the old one untouched.
  */
 object GameEngine {
+    const val SOLO = 1
     const val MIN_PLAYERS = 2
     const val MAX_PLAYERS = 5
 
     /** Builds a shuffled deck: [pairCount] distinct pictures, two cards each. */
     fun newGame(players: Int, pairCount: Int, artCount: Int, random: Random = Random): GameState {
-        require(players in MIN_PLAYERS..MAX_PLAYERS) { "players must be $MIN_PLAYERS-$MAX_PLAYERS" }
+        require(players == SOLO || players in MIN_PLAYERS..MAX_PLAYERS) { "players must be 1 or $MIN_PLAYERS-$MAX_PLAYERS" }
         require(pairCount in 1..artCount) { "not enough pictures for $pairCount pairs" }
         val keys = (0 until artCount).shuffled(random).take(pairCount)
         val cards = (keys + keys).shuffled(random).mapIndexed { i, key -> Card(id = i, pairKey = key) }
@@ -100,12 +106,14 @@ object GameEngine {
             state.copy(
                 cards = cards,
                 scores = scores,
+                turns = state.turns + 1,
                 phase = if (cards.all { it.matched }) Phase.GameOver else Phase.PickFirst,
             )
         } else {
             state.copy(
                 cards = state.cards.flip(phase.first, up = false).flip(phase.second, up = false),
                 currentPlayer = (state.currentPlayer + 1) % state.playerCount,
+                turns = state.turns + 1,
                 phase = Phase.PickFirst,
             )
         }
