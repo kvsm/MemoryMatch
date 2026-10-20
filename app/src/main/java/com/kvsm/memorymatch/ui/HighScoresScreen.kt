@@ -65,7 +65,7 @@ fun HighScoresScreen(
     ) {
         Text("🏆", fontSize = 52.sp)
         Text("Top 10", fontSize = 38.sp, fontWeight = FontWeight.Black, color = Palette.Ink)
-        Text("Solo games — fewest turns wins", fontSize = 16.sp, color = Palette.InkSoft)
+        Text("Solo games — fewest turns wins.\nA match gives you a free go.", textAlign = TextAlign.Center, fontSize = 16.sp, color = Palette.InkSoft)
         Spacer(Modifier.height(20.dp))
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -188,7 +188,7 @@ fun ScoreTable(table: List<HighScore>, highlight: HighScore?, showDates: Boolean
                 fontSize = 20.sp,
             )
             Text(
-                " turns",
+                if (score.turns == 1) " turn" else " turns",
                 color = Palette.InkSoft,
                 fontSize = 13.sp,
             )

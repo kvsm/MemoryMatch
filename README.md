@@ -12,8 +12,8 @@ A memory card game with hand-drawn toy and animal cards: play solo against the t
 
 ## Solo mode
 
-Clear the board in as few turns as you can (every pair you turn over is one turn; a perfect
-game is one turn per pair). Each grid size has its own top 10, saved on the phone. Get onto
+Clear the board in as few turns as you can. Like party mode, finding a pair gives you a free
+go, so only a miss ends your turn; a perfect game is 1 turn. Each grid size has its own top 10, saved on the phone. Get onto
 it and you'll be asked for your name; the last name used is filled in for next time.
 
 ## Getting the app

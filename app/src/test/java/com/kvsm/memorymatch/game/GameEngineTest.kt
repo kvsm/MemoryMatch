@@ -99,7 +99,7 @@ class GameEngineTest {
 class SoloModeTest {
 
     @Test
-    fun `solo counts every pair turned over and never changes player`() {
+    fun `solo turns only move on after a miss`() {
         var s = GameEngine.newGame(GameEngine.SOLO, 4, artCount = 16, random = Random(3))
         assertTrue(s.isSolo)
         // one miss, then clear the board perfectly
@@ -107,13 +107,13 @@ class SoloModeTest {
         val miss = s.cards.indices.first { s.cards[it].pairKey != s.cards[first].pairKey }
         s = GameEngine.resolve(GameEngine.pick(GameEngine.pick(s, first), miss))
         assertEquals(0, s.currentPlayer)
-        assertEquals(1, s.turns)
+        assertEquals(2, s.turns)
         while (!s.isOver) {
             val a = s.cards.indexOfFirst { !it.matched }
             val b = s.cards.indices.first { it != a && s.cards[it].pairKey == s.cards[a].pairKey }
             s = GameEngine.resolve(GameEngine.pick(GameEngine.pick(s, a), b))
         }
-        assertEquals(5, s.turns)
+        assertEquals(2, s.turns) // matches are free goes
         assertEquals(4, s.pairsFound)
         assertEquals(listOf(4), s.scores)
     }

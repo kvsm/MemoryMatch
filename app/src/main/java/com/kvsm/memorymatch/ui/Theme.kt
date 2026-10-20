@@ -28,6 +28,8 @@ object Palette {
 
 fun playerName(index: Int) = "Player ${index + 1}"
 
+fun turnsText(n: Int) = if (n == 1) "1 turn" else "$n turns"
+
 @Composable
 fun MemoryMatchTheme(content: @Composable () -> Unit) {
     MaterialTheme(

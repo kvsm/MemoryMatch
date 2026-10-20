@@ -36,8 +36,11 @@ data class GameState(
     val scores: List<Int>,
     val currentPlayer: Int,
     val phase: Phase,
-    /** Pairs of cards turned over so far, by anyone. Solo mode is scored on this. */
-    val turns: Int = 0,
+    /**
+     * The turn being played, starting at 1. A match keeps the turn going (a free go);
+     * only a miss starts the next one. Solo mode is scored on this.
+     */
+    val turns: Int = 1,
 ) {
     val playerCount: Int get() = scores.size
     val isSolo: Boolean get() = playerCount == 1
@@ -106,7 +109,6 @@ object GameEngine {
             state.copy(
                 cards = cards,
                 scores = scores,
-                turns = state.turns + 1,
                 phase = if (cards.all { it.matched }) Phase.GameOver else Phase.PickFirst,
             )
         } else {

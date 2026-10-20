@@ -204,11 +204,11 @@ private fun TurnBanner(game: GameState) {
     }
 }
 
-/** Solo header: turns taken, pairs found, and the best score to beat on this grid. */
+/** Solo header: the turn you're on, pairs found, and the best score to beat on this grid. */
 @Composable
 private fun SoloStats(game: GameState, best: Int?) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatTile("Turns", "${game.turns}", Palette.Players[1], Modifier.weight(1f), animate = true)
+        StatTile("Turn", "${game.turns}", Palette.Players[1], Modifier.weight(1f), animate = true)
         StatTile("Pairs", "${game.pairsFound}/${game.totalPairs}", Palette.Match, Modifier.weight(1f), animate = true)
         StatTile("Best", best?.toString() ?: "–", Palette.Sunshine, Modifier.weight(1f))
     }
@@ -430,7 +430,7 @@ private fun SoloResultsOverlay(
     val rank = if (submitted != null) table.indexOf(submitted).takeIf { it >= 0 }
     else HighScoreTable.rankFor(table, game.turns)
     val madeTable = rank != null
-    val perfect = game.turns == game.totalPairs
+    val perfect = game.turns == 1
 
     val headline = when {
         rank == 0 -> "New record!"
@@ -470,7 +470,7 @@ private fun SoloResultsOverlay(
             )
             Text(
                 buildString {
-                    append("Cleared in ${game.turns} turns")
+                    append("Cleared in ${turnsText(game.turns)}")
                     if (perfect) append(" — a perfect game!")
                     if (madeTable) append("\nThat's #${rank!! + 1} on ${playing.difficulty.label}")
                 },
@@ -515,7 +515,7 @@ private fun SoloResultsOverlay(
                 if (!madeTable && table.size >= HighScoreTable.SIZE) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Beat ${table.last().turns} turns to make the top 10",
+                        "Beat ${turnsText(table.last().turns)} to make the top 10",
                         color = Palette.InkSoft,
                         fontSize = 15.sp,
                     )

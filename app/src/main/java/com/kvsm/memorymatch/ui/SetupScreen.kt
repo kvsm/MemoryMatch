@@ -97,7 +97,7 @@ fun SetupScreen(
             ) {
                 if (solo) {
                     Text(
-                        "Clear the board in as few turns as you can.\nBeat the top 10 to get your name on the board!",
+                        "Clear the board in as few turns as you can.\nFind a pair and you get a free go.\nBeat the top 10 to get your name on the board!",
                         fontSize = 16.sp,
                         color = Palette.InkSoft,
                         textAlign = TextAlign.Center,

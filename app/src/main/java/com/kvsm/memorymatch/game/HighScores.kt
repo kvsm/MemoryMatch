@@ -26,6 +26,12 @@ object HighScoreTable {
 class HighScoreStore(context: Context) {
     private val prefs = context.getSharedPreferences("high_scores", Context.MODE_PRIVATE)
 
+    init {
+        // Scores from v1.0.2 counted matches as turns; they're not comparable, so clear them.
+        val old = prefs.all.keys.filter { it.startsWith("solo_") && !it.startsWith(PREFIX) }
+        if (old.isNotEmpty()) prefs.edit().apply { old.forEach { remove(it) } }.apply()
+    }
+
     fun load(difficulty: Difficulty): List<HighScore> {
         val raw = prefs.getString(key(difficulty), null) ?: return emptyList()
         return runCatching {
@@ -49,5 +55,9 @@ class HighScoreStore(context: Context) {
         get() = prefs.getString("last_name", "") ?: ""
         set(value) = prefs.edit().putString("last_name", value).apply()
 
-    private fun key(d: Difficulty) = "solo_${d.name.lowercase()}"
+    private fun key(d: Difficulty) = PREFIX + d.name.lowercase()
+
+    private companion object {
+        const val PREFIX = "solo_v2_"
+    }
 }
